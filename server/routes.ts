@@ -203,8 +203,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/league-table/import", isAuthenticated, async (req, res) => {
     try {
       const { scrapeLeagueTable } = await import('./scraper');
-      const url = req.body.url || 'https://hrs.hr/natjecanje/?natjecanje=1643';
       
+      // Security: Only allow HRS website URLs to prevent SSRF
+      const allowedUrl = 'https://hrs.hr/natjecanje/?natjecanje=1643';
+      const requestedUrl = req.body.url;
+      
+      if (requestedUrl && !requestedUrl.startsWith('https://hrs.hr/')) {
+        return res.status(400).json({ error: "Only HRS website URLs are allowed" });
+      }
+      
+      const url = requestedUrl || allowedUrl;
       const scrapedData = await scrapeLeagueTable(url);
       
       if (scrapedData.length === 0) {
