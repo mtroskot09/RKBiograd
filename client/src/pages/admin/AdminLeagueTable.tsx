@@ -112,7 +112,9 @@ export default function AdminLeagueTable() {
           description: "Your session has expired. Please log in again.",
           variant: "destructive",
         });
-        setLocation("/api/login");
+        setTimeout(() => {
+          window.location.href = "/api/login";
+        }, 500);
       } else {
         toast({
           title: "Error",
@@ -144,7 +146,9 @@ export default function AdminLeagueTable() {
           description: "Your session has expired. Please log in again.",
           variant: "destructive",
         });
-        setLocation("/api/login");
+        setTimeout(() => {
+          window.location.href = "/api/login";
+        }, 500);
       } else {
         toast({
           title: "Error",
@@ -173,7 +177,9 @@ export default function AdminLeagueTable() {
           description: "Your session has expired. Please log in again.",
           variant: "destructive",
         });
-        setLocation("/api/login");
+        setTimeout(() => {
+          window.location.href = "/api/login";
+        }, 500);
       } else {
         toast({
           title: "Error",

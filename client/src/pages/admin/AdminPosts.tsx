@@ -98,7 +98,9 @@ export default function AdminPosts() {
           description: "Your session has expired. Please log in again.",
           variant: "destructive",
         });
-        setLocation("/api/login");
+        setTimeout(() => {
+          window.location.href = "/api/login";
+        }, 500);
       } else {
         toast({
           title: "Error",
@@ -130,7 +132,9 @@ export default function AdminPosts() {
           description: "Your session has expired. Please log in again.",
           variant: "destructive",
         });
-        setLocation("/api/login");
+        setTimeout(() => {
+          window.location.href = "/api/login";
+        }, 500);
       } else {
         toast({
           title: "Error",
@@ -159,7 +163,9 @@ export default function AdminPosts() {
           description: "Your session has expired. Please log in again.",
           variant: "destructive",
         });
-        setLocation("/api/login");
+        setTimeout(() => {
+          window.location.href = "/api/login";
+        }, 500);
       } else {
         toast({
           title: "Error",
