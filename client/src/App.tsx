@@ -9,6 +9,10 @@ import U15 from "@/pages/U15";
 import U13 from "@/pages/U13";
 import History from "@/pages/History";
 import Contact from "@/pages/Contact";
+import AdminDashboard from "@/pages/admin/AdminDashboard";
+import AdminPosts from "@/pages/admin/AdminPosts";
+import AdminFixtures from "@/pages/admin/AdminFixtures";
+import AdminLeagueTable from "@/pages/admin/AdminLeagueTable";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -20,6 +24,10 @@ function Router() {
       <Route path="/u13" component={U13} />
       <Route path="/history" component={History} />
       <Route path="/contact" component={Contact} />
+      <Route path="/admin" component={AdminDashboard} />
+      <Route path="/admin/posts" component={AdminPosts} />
+      <Route path="/admin/fixtures" component={AdminFixtures} />
+      <Route path="/admin/league-table" component={AdminLeagueTable} />
       <Route component={NotFound} />
     </Switch>
   );

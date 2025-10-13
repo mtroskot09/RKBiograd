@@ -2,10 +2,12 @@ import { Link, useLocation } from "wouter";
 import { Menu, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
+import { useAuth } from "@/hooks/useAuth";
 
 export default function Header() {
   const [location] = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const { isAuthenticated } = useAuth();
 
   const navItems = [
     { path: "/", label: "Početna" },
@@ -42,6 +44,17 @@ export default function Header() {
                 </Button>
               </Link>
             ))}
+            {isAuthenticated && (
+              <Link href="/admin">
+                <Button
+                  variant="ghost"
+                  className={location === "/admin" ? "bg-accent text-accent-foreground" : ""}
+                  data-testid="nav-admin"
+                >
+                  Admin
+                </Button>
+              </Link>
+            )}
           </nav>
 
           <Button
@@ -69,6 +82,18 @@ export default function Header() {
                 </Button>
               </Link>
             ))}
+            {isAuthenticated && (
+              <Link href="/admin">
+                <Button
+                  variant="ghost"
+                  className={`w-full justify-start ${location === "/admin" ? "bg-accent text-accent-foreground" : ""}`}
+                  onClick={() => setMobileMenuOpen(false)}
+                  data-testid="mobile-nav-admin"
+                >
+                  Admin
+                </Button>
+              </Link>
+            )}
           </nav>
         )}
       </div>

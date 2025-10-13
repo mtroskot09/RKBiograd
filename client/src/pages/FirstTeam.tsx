@@ -1,15 +1,18 @@
+import { useQuery } from "@tanstack/react-query";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { Card } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 import teamImage from '@assets/generated_images/Team_celebration_victory_shot_e3f6592a.png';
 import FixtureCard from "@/components/FixtureCard";
+import type { Fixture } from "@shared/schema";
 
 export default function FirstTeam() {
-  const mockResults = [
-    { homeTeam: "RK Biograd", awayTeam: "RK Split", homeScore: 32, awayScore: 24, date: "5. listopada 2025.", location: "Sportska dvorana Biograd", status: "finished" as const },
-    { homeTeam: "RK Šibenik", awayTeam: "RK Biograd", homeScore: 25, awayScore: 28, date: "28. rujna 2025.", location: "Sportska dvorana Šibenik", status: "finished" as const },
-    { homeTeam: "RK Biograd", awayTeam: "RK Zagreb", homeScore: 26, awayScore: 26, date: "21. rujna 2025.", location: "Sportska dvorana Biograd", status: "finished" as const },
-  ];
+  const { data: allFixtures, isLoading } = useQuery<Fixture[]>({
+    queryKey: ["/api/fixtures"],
+  });
+
+  const finishedMatches = allFixtures?.filter(f => f.status === "finished" && f.category === "Prva ekipa") || [];
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -80,11 +83,30 @@ export default function FirstTeam() {
 
           <section>
             <h2 className="text-3xl font-bold mb-6">Posljednji rezultati</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {mockResults.map((result, idx) => (
-                <FixtureCard key={idx} {...result} />
-              ))}
-            </div>
+            {isLoading ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {[1, 2, 3].map((i) => (
+                  <Skeleton key={i} className="h-32 w-full" />
+                ))}
+              </div>
+            ) : finishedMatches.length === 0 ? (
+              <p className="text-muted-foreground">Nema rezultata za prikaz.</p>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {finishedMatches.map((result) => (
+                  <FixtureCard 
+                    key={result.id} 
+                    homeTeam={result.homeTeam}
+                    awayTeam={result.awayTeam}
+                    homeScore={result.homeScore ?? undefined}
+                    awayScore={result.awayScore ?? undefined}
+                    date={result.date}
+                    location={result.location}
+                    status={result.status as "upcoming" | "live" | "finished"}
+                  />
+                ))}
+              </div>
+            )}
           </section>
         </div>
       </main>
