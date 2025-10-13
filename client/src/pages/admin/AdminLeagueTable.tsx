@@ -190,6 +190,37 @@ export default function AdminLeagueTable() {
     },
   });
 
+  const importMutation = useMutation({
+    mutationFn: async (url?: string) => {
+      return await apiRequest("POST", "/api/league-table/import", { url });
+    },
+    onSuccess: (data: any) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/league-table"] });
+      toast({
+        title: "Success",
+        description: `Imported ${data.imported} teams from HRS website`,
+      });
+    },
+    onError: (error: Error) => {
+      if (isUnauthorizedError(error)) {
+        toast({
+          title: "Unauthorized",
+          description: "Your session has expired. Please log in again.",
+          variant: "destructive",
+        });
+        setTimeout(() => {
+          window.location.href = "/api/login";
+        }, 500);
+      } else {
+        toast({
+          title: "Error",
+          description: "Failed to import league table from HRS",
+          variant: "destructive",
+        });
+      }
+    },
+  });
+
   const onSubmit = (data: InsertLeagueTable) => {
     if (editingRow) {
       updateMutation.mutate({ id: editingRow.id, data });
@@ -236,10 +267,20 @@ export default function AdminLeagueTable() {
             <h1 className="text-3xl md:text-4xl font-bold mb-2">Manage League Table</h1>
             <p className="text-muted-foreground">Update standings and team statistics</p>
           </div>
-          <Button onClick={handleOpenDialog} data-testid="button-create-league-row">
-            <Plus className="mr-2 h-4 w-4" />
-            Add Team
-          </Button>
+          <div className="flex gap-2">
+            <Button 
+              onClick={() => importMutation.mutate()} 
+              variant="outline"
+              disabled={importMutation.isPending}
+              data-testid="button-import-from-hrs"
+            >
+              {importMutation.isPending ? "Importing..." : "Import from HRS"}
+            </Button>
+            <Button onClick={handleOpenDialog} data-testid="button-create-league-row">
+              <Plus className="mr-2 h-4 w-4" />
+              Add Team
+            </Button>
+          </div>
         </div>
 
         {tableLoading ? (

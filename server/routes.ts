@@ -199,6 +199,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Scraper route - import league table from HRS website
+  app.post("/api/league-table/import", isAuthenticated, async (req, res) => {
+    try {
+      const { scrapeLeagueTable } = await import('./scraper');
+      const url = req.body.url || 'https://hrs.hr/natjecanje/?natjecanje=1643';
+      
+      const scrapedData = await scrapeLeagueTable(url);
+      
+      if (scrapedData.length === 0) {
+        return res.status(400).json({ error: "No data found on the page" });
+      }
+
+      // Delete existing entries and insert new ones
+      const existingRows = await storage.getLeagueTable();
+      for (const row of existingRows) {
+        await storage.deleteLeagueTableRow(row.id);
+      }
+
+      // Insert scraped data
+      const results = [];
+      for (const data of scrapedData) {
+        const row = await storage.createLeagueTableRow(data);
+        results.push(row);
+      }
+
+      res.json({ 
+        success: true, 
+        imported: results.length,
+        data: results 
+      });
+    } catch (error) {
+      console.error('Scraper error:', error);
+      res.status(500).json({ error: "Failed to import league table" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
