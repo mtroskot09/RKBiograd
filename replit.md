@@ -112,6 +112,15 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
+### October 13, 2025 - League Table Scraper Feature Added
+- **New Feature**: Web scraper to automatically import league table data from Croatian Handball Federation (HRS) website
+- **Scraper Module** (`server/scraper.ts`): Uses cheerio to parse HTML from https://hrs.hr/natjecanje/?natjecanje=1643
+- **API Endpoint** (`POST /api/league-table/import`): Protected endpoint with URL validation (only allows hrs.hr domain to prevent SSRF attacks)
+- **Admin UI**: "Import from HRS" button in admin league table page - one-click import of current standings
+- **Database Fix**: Created sessions table to fix authentication callback errors
+- Process: Automatically deletes existing league table entries and inserts fresh data from HRS website
+- Security: URL validation ensures only Croatian Handball Federation website can be scraped
+
 ### October 13, 2025 - Authentication Flow Fixed
 - **Critical Fix**: Changed all authentication redirects from client-side routing (`setLocation()`) to full page navigation (`window.location.href`)
 - This ensures unauthenticated users properly reach the backend `/api/login` endpoint to trigger Replit Auth OIDC flow
