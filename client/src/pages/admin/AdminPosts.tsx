@@ -1,6 +1,5 @@
 import { useAuth } from "@/hooks/useAuth";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { useLocation } from "wouter";
 import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -11,19 +10,22 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Plus, Edit, Trash2 } from "lucide-react";
+import { Plus, Edit, Trash2, X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { isUnauthorizedError } from "@/lib/authUtils";
 import type { Post, InsertPost } from "@shared/schema";
 import { insertPostSchema } from "@shared/schema";
+import { IMAGE_ACCEPT, uploadImage } from "@/lib/uploadImage";
+import AdminBackButton from "@/components/AdminBackButton";
+
 
 export default function AdminPosts() {
   const { isLoading: authLoading, isAuthenticated } = useAuth();
-  const [, setLocation] = useLocation();
   const { toast } = useToast();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingPost, setEditingPost] = useState<Post | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
 
   const { data: posts, isLoading: postsLoading } = useQuery<Post[]>({
     queryKey: ["/api/posts"],
@@ -45,8 +47,8 @@ export default function AdminPosts() {
   useEffect(() => {
     if (!authLoading && !isAuthenticated) {
       toast({
-        title: "Authentication Required",
-        description: "Please log in to access this page",
+        title: "Potrebna prijava",
+        description: "Prijavite se za pristup ovoj stranici",
         variant: "destructive",
       });
       setTimeout(() => {
@@ -84,8 +86,8 @@ export default function AdminPosts() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/posts"] });
       toast({
-        title: "Success",
-        description: "Post created successfully",
+        title: "Spremljeno",
+        description: "Vijest je objavljena",
       });
       setIsDialogOpen(false);
       setEditingPost(null);
@@ -94,8 +96,8 @@ export default function AdminPosts() {
     onError: (error: Error) => {
       if (isUnauthorizedError(error)) {
         toast({
-          title: "Unauthorized",
-          description: "Your session has expired. Please log in again.",
+          title: "Sesija je istekla",
+          description: "Prijavite se ponovno.",
           variant: "destructive",
         });
         setTimeout(() => {
@@ -103,8 +105,8 @@ export default function AdminPosts() {
         }, 500);
       } else {
         toast({
-          title: "Error",
-          description: "Failed to create post",
+          title: "Greška",
+          description: "Vijest nije spremljena",
           variant: "destructive",
         });
       }
@@ -118,8 +120,8 @@ export default function AdminPosts() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/posts"] });
       toast({
-        title: "Success",
-        description: "Post updated successfully",
+        title: "Spremljeno",
+        description: "Promjene su spremljene",
       });
       setIsDialogOpen(false);
       setEditingPost(null);
@@ -128,8 +130,8 @@ export default function AdminPosts() {
     onError: (error: Error) => {
       if (isUnauthorizedError(error)) {
         toast({
-          title: "Unauthorized",
-          description: "Your session has expired. Please log in again.",
+          title: "Sesija je istekla",
+          description: "Prijavite se ponovno.",
           variant: "destructive",
         });
         setTimeout(() => {
@@ -137,8 +139,8 @@ export default function AdminPosts() {
         }, 500);
       } else {
         toast({
-          title: "Error",
-          description: "Failed to update post",
+          title: "Greška",
+          description: "Promjene nisu spremljene",
           variant: "destructive",
         });
       }
@@ -152,15 +154,15 @@ export default function AdminPosts() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/posts"] });
       toast({
-        title: "Success",
-        description: "Post deleted successfully",
+        title: "Spremljeno",
+        description: "Vijest je obrisana",
       });
     },
     onError: (error: Error) => {
       if (isUnauthorizedError(error)) {
         toast({
-          title: "Unauthorized",
-          description: "Your session has expired. Please log in again.",
+          title: "Sesija je istekla",
+          description: "Prijavite se ponovno.",
           variant: "destructive",
         });
         setTimeout(() => {
@@ -168,13 +170,25 @@ export default function AdminPosts() {
         }, 500);
       } else {
         toast({
-          title: "Error",
-          description: "Failed to delete post",
+          title: "Greška",
+          description: "Vijest nije obrisana",
           variant: "destructive",
         });
       }
     },
   });
+
+  const handleUpload = async (file: File): Promise<string | null> => {
+    setIsUploading(true);
+    try {
+      return await uploadImage(file);
+    } catch (error) {
+      toast({ title: "Greška", description: (error as Error).message, variant: "destructive" });
+      return null;
+    } finally {
+      setIsUploading(false);
+    }
+  };
 
   const onSubmit = (data: InsertPost) => {
     if (editingPost) {
@@ -190,7 +204,7 @@ export default function AdminPosts() {
   };
 
   const handleDelete = (id: string) => {
-    if (window.confirm("Are you sure you want to delete this post?")) {
+    if (window.confirm("Jeste li sigurni da želite obrisati ovu vijest?")) {
       deleteMutation.mutate(id);
     }
   };
@@ -203,7 +217,7 @@ export default function AdminPosts() {
   if (authLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <p className="text-muted-foreground">Loading...</p>
+        <p className="text-muted-foreground">Učitavanje...</p>
       </div>
     );
   }
@@ -215,20 +229,21 @@ export default function AdminPosts() {
   return (
     <div className="min-h-screen bg-background">
       <div className="max-w-7xl mx-auto px-4 py-8">
-        <div className="flex justify-between items-center mb-8">
+        <AdminBackButton />
+        <div className="flex flex-wrap justify-between items-end gap-4 mb-8">
           <div>
-            <h1 className="text-3xl md:text-4xl font-bold mb-2">Manage Posts</h1>
-            <p className="text-muted-foreground">Create and edit news articles</p>
+            <h1 className="text-3xl md:text-4xl font-bold mb-2">Vijesti</h1>
+            <p className="text-muted-foreground">Pisanje i uređivanje vijesti</p>
           </div>
           <Button onClick={handleOpenDialog} data-testid="button-create-post">
             <Plus className="mr-2 h-4 w-4" />
-            Create Post
+            Nova vijest
           </Button>
         </div>
 
         {postsLoading ? (
           <div className="text-center py-12">
-            <p className="text-muted-foreground">Loading posts...</p>
+            <p className="text-muted-foreground">Učitavanje vijesti...</p>
           </div>
         ) : posts && posts.length > 0 ? (
           <div className="grid grid-cols-1 gap-4">
@@ -242,7 +257,7 @@ export default function AdminPosts() {
                     <div className="flex gap-4 mt-2 text-sm text-muted-foreground">
                       <span data-testid={`text-post-category-${post.id}`}>{post.category}</span>
                       <span data-testid={`text-post-date-${post.id}`}>
-                        {new Date(post.publishedAt).toLocaleDateString()}
+                        {new Date(post.publishedAt).toLocaleDateString("hr-HR")}
                       </span>
                     </div>
                   </div>
@@ -276,7 +291,7 @@ export default function AdminPosts() {
         ) : (
           <Card>
             <CardContent className="py-12 text-center">
-              <p className="text-muted-foreground">No posts yet. Create your first one!</p>
+              <p className="text-muted-foreground">Još nema vijesti. Napišite prvu!</p>
             </CardContent>
           </Card>
         )}
@@ -284,9 +299,9 @@ export default function AdminPosts() {
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto" data-testid="dialog-post-form">
             <DialogHeader>
-              <DialogTitle>{editingPost ? "Edit Post" : "Create New Post"}</DialogTitle>
+              <DialogTitle>{editingPost ? "Uredi vijest" : "Nova vijest"}</DialogTitle>
               <DialogDescription>
-                {editingPost ? "Update the post details below" : "Fill in the details to create a new post"}
+                {editingPost ? "Izmijenite podatke vijesti" : "Ispunite podatke za novu vijest"}
               </DialogDescription>
             </DialogHeader>
             <Form {...form}>
@@ -296,7 +311,7 @@ export default function AdminPosts() {
                   name="title"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Title</FormLabel>
+                      <FormLabel>Naslov</FormLabel>
                       <FormControl>
                         <Input {...field} data-testid="input-post-title" />
                       </FormControl>
@@ -310,7 +325,7 @@ export default function AdminPosts() {
                   name="excerpt"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Excerpt</FormLabel>
+                      <FormLabel>Sažetak</FormLabel>
                       <FormControl>
                         <Textarea {...field} rows={2} data-testid="input-post-excerpt" />
                       </FormControl>
@@ -324,7 +339,7 @@ export default function AdminPosts() {
                   name="content"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Content</FormLabel>
+                      <FormLabel>Tekst</FormLabel>
                       <FormControl>
                         <Textarea {...field} rows={6} data-testid="input-post-content" />
                       </FormControl>
@@ -338,11 +353,11 @@ export default function AdminPosts() {
                   name="category"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Category</FormLabel>
+                      <FormLabel>Kategorija</FormLabel>
                       <Select onValueChange={field.onChange} value={field.value}>
                         <FormControl>
                           <SelectTrigger data-testid="select-post-category">
-                            <SelectValue placeholder="Select a category" />
+                            <SelectValue placeholder="Odaberite kategoriju" />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
@@ -362,10 +377,46 @@ export default function AdminPosts() {
                   name="imageSrc"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Image URL</FormLabel>
+                      <FormLabel>Fotografija</FormLabel>
+                      {field.value && (
+                        <div className="relative">
+                          <img
+                            src={field.value}
+                            alt=""
+                            className="w-full max-h-48 object-cover rounded-md border"
+                            data-testid="img-post-preview"
+                          />
+                          <Button
+                            type="button"
+                            size="icon"
+                            variant="secondary"
+                            className="absolute top-2 right-2"
+                            onClick={() => field.onChange("")}
+                            data-testid="button-remove-image"
+                          >
+                            <X className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      )}
                       <FormControl>
-                        <Input {...field} value={field.value || ""} data-testid="input-post-image" />
+                        <Input
+                          type="file"
+                          accept={IMAGE_ACCEPT}
+                          disabled={isUploading}
+                          onChange={async (e) => {
+                            const file = e.target.files?.[0];
+                            e.target.value = "";
+                            if (file) {
+                              const url = await handleUpload(file);
+                              if (url) field.onChange(url);
+                            }
+                          }}
+                          data-testid="input-post-image-file"
+                        />
                       </FormControl>
+                      <p className="text-xs text-muted-foreground">
+                        {isUploading ? "Učitavanje fotografije..." : "JPG, PNG, WebP ili GIF, najviše 5 MB."}
+                      </p>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -381,7 +432,7 @@ export default function AdminPosts() {
                     }}
                     data-testid="button-cancel-post"
                   >
-                    Cancel
+                    Odustani
                   </Button>
                   <Button
                     type="submit"
@@ -389,10 +440,10 @@ export default function AdminPosts() {
                     data-testid="button-submit-post"
                   >
                     {createMutation.isPending || updateMutation.isPending
-                      ? "Saving..."
+                      ? "Spremanje..."
                       : editingPost
-                      ? "Update Post"
-                      : "Create Post"}
+                      ? "Spremi promjene"
+                      : "Objavi"}
                   </Button>
                 </DialogFooter>
               </form>

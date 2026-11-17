@@ -1,15 +1,17 @@
-import { Pool, neonConfig } from '@neondatabase/serverless';
-import { drizzle } from 'drizzle-orm/neon-serverless';
-import ws from "ws";
+import pg from "pg";
+import { drizzle, type NodePgDatabase } from "drizzle-orm/node-postgres";
 import * as schema from "@shared/schema";
 
-neonConfig.webSocketConstructor = ws;
+// Standard Postgres driver: works with Render, Neon, Replit and a local Postgres.
+// Without DATABASE_URL (local development only) the app falls back to in-memory storage.
+export const pool = process.env.DATABASE_URL
+  ? new pg.Pool({ connectionString: process.env.DATABASE_URL })
+  : null;
 
-if (!process.env.DATABASE_URL) {
-  throw new Error(
-    "DATABASE_URL must be set. Did you forget to provision a database?",
-  );
-}
+// Hosted databases close idle connections now and then. Without this listener the
+// pool's "error" event would crash the whole server; the pool reconnects on next use.
+pool?.on("error", (error) => {
+  console.error("Postgres connection error (will reconnect):", error.message);
+});
 
-export const pool = new Pool({ connectionString: process.env.DATABASE_URL });
-export const db = drizzle({ client: pool, schema });
+export const db: NodePgDatabase<typeof schema> | null = pool ? drizzle(pool, { schema }) : null;

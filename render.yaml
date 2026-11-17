@@ -1,0 +1,44 @@
+# Render Blueprint for the RK Biograd website: one Node web service + one Postgres database.
+# Render dashboard → New → Blueprint → pick this repository. See replit.md → "Deploying on Render".
+services:
+  - type: web
+    name: rk-biograd
+    runtime: node
+    # Always-on instance. "free" also works, but sleeps after 15 min without visitors
+    # (first visit then takes ~1 minute) and does not run the preDeployCommand.
+    plan: 0.5c-512mb
+    region: frankfurt
+    buildCommand: npm ci && npm run build
+    # Creates/updates the database tables before each deploy goes live.
+    preDeployCommand: npm run db:push
+    startCommand: npm start
+    healthCheckPath: /healthz
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+      - key: DATABASE_URL
+        fromDatabase:
+          name: rk-biograd-db
+          property: connectionString
+      - key: SESSION_SECRET
+        generateValue: true
+      # Asked for when the Blueprint is first created:
+      - key: ADMIN_EMAILS # Google accounts allowed into the admin panel, comma-separated
+        sync: false
+      - key: GOOGLE_CLIENT_ID
+        sync: false
+      - key: GOOGLE_CLIENT_SECRET
+        sync: false
+      # Optional: set to your own domain (e.g. https://rkbiograd.hr) once it is connected.
+      # Defaults to the onrender.com address (RENDER_EXTERNAL_URL).
+      - key: PUBLIC_URL
+        sync: false
+
+databases:
+  - name: rk-biograd-db
+    # Paid plan: Render's free Postgres is deleted after 30 days.
+    plan: 0.1c-256mb
+    region: frankfurt
+    postgresMajorVersion: "17"
+    databaseName: rkbiograd
+    user: rkbiograd

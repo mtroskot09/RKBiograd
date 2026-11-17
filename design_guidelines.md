@@ -11,28 +11,25 @@
 
 ## Color Palette
 
-**Primary Colors (Light Mode):**
-- Brand Primary: 210 85% 45% (Deep ocean blue - Croatian coastal reference)
-- Brand Secondary: 200 75% 35% (Darker navy for headers/important elements)
-- Accent: 15 90% 55% (Energetic orange for CTAs and highlights)
+Club colors are **white, dark blue and light blue** (from the crest). All tokens live in `client/src/index.css`.
 
-**Primary Colors (Dark Mode):**
-- Background: 220 15% 12% (Rich dark blue-gray)
-- Surface: 220 12% 18% (Elevated surfaces)
-- Brand Primary: 210 75% 60% (Brighter blue for dark mode)
-- Accent: 15 85% 60% (Vibrant orange maintaining energy)
+**Brand (light mode):**
+- Primary / dark blue: 230 80% 22% (#0B1C65) – header, footer, buttons, headings, "our team" highlights
+- Accent / light blue: 202 88% 55% (#29A9F0) – active nav, badges, CTAs on dark backgrounds, bars and icons
+- Secondary: 203 90% 93% – pale light blue fills (stat boxes, chips)
+- Background: 216 45% 97% (very light blue-grey page), cards white
+- `.text-accent-strong` (202 90% 34%) – light blue dark enough for small text on white
+- `.bg-brand-gradient` – dark blue gradient for header, hero, page banners, scoreboard, footer
 
-**Semantic Colors:**
-- Success/Win: 145 60% 45% (Victory green for match wins)
-- Neutral/Draw: 40 45% 55% (Amber for draws)
-- Loss: 0 0% 50% (Neutral gray, de-emphasized)
+**Results:** win = dark blue, loss = muted grey, live = pulsing light blue badge. No red/green/orange
+except red (`destructive`) for delete buttons and errors in admin.
 
 ## Typography
 
 **Font Families:**
-- Headlines: 'Inter', system-ui (Bold, 700-900 weights for impact)
-- Body: 'Inter', system-ui (Regular 400, Medium 500)
-- Data/Tables: 'JetBrains Mono', monospace (Clear number distinction)
+- Headlines: 'Barlow Condensed' (600–800, uppercase for page and section titles) – `font-display`
+- Body: 'Inter', system-ui (400–700)
+- Numbers in tables: Inter with tabular digits (`font-mono` maps to Inter + `tabular-nums`)
 
 **Type Scale:**
 - Hero Title: text-5xl md:text-6xl lg:text-7xl font-bold

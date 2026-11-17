@@ -1,83 +1,118 @@
 import { Card } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Calendar, MapPin } from "lucide-react";
+import { Calendar, ChevronRight, MapPin } from "lucide-react";
+import { Link } from "wouter";
+import type { HrsMatch, HrsMatchStatus } from "@shared/hrs";
+import TeamLogo from "@/components/TeamLogo";
+import { formatMatchDate, formatMatchTime } from "@/lib/hrsFormat";
+import { cn } from "@/lib/utils";
 
 interface FixtureCardProps {
-  homeTeam: string;
-  awayTeam: string;
-  homeScore?: number;
-  awayScore?: number;
-  date: string;
-  time?: string;
-  location: string;
-  status: "upcoming" | "live" | "finished";
+  match: HrsMatch;
 }
 
-export default function FixtureCard({
-  homeTeam,
-  awayTeam,
-  homeScore,
-  awayScore,
-  date,
-  time,
-  location,
-  status
-}: FixtureCardProps) {
-  const getStatusBadge = () => {
-    switch (status) {
-      case "live":
-        return <Badge className="bg-red-500 text-white animate-pulse">UŽIVO</Badge>;
-      case "finished":
-        return <Badge variant="secondary">ZAVRŠENO</Badge>;
-      case "upcoming":
-        return <Badge className="bg-accent text-accent-foreground">PREDSTOJI</Badge>;
-    }
+const STATUS: Record<HrsMatchStatus, { label: string; className: string }> = {
+  live: { label: "Uživo", className: "bg-accent text-accent-foreground animate-pulse" },
+  finished: { label: "Završeno", className: "bg-secondary text-secondary-foreground" },
+  postponed: { label: "Odgođeno", className: "border border-border text-muted-foreground" },
+  upcoming: { label: "Predstoji", className: "bg-primary text-primary-foreground" },
+};
+
+export default function FixtureCard({ match }: FixtureCardProps) {
+  const { homeScore, awayScore, status } = match;
+  const time = formatMatchTime(match.startsAt);
+  const location = [match.venue, match.city].filter(Boolean).join(", ");
+  const hasDetails = status === "finished" || status === "live";
+  const hasScore = homeScore !== null && awayScore !== null;
+
+  // The winning side is shown in dark blue, the losing side greyed out.
+  const scoreClass = (isHome: boolean) => {
+    if (!hasScore || homeScore === awayScore) return "text-foreground";
+    const won = isHome ? homeScore! > awayScore! : awayScore! > homeScore!;
+    return won ? "text-primary" : "text-muted-foreground";
   };
 
-  const getScoreColor = (isHome: boolean, homeScore?: number, awayScore?: number) => {
-    if (homeScore === undefined || awayScore === undefined) return "";
-    if (homeScore === awayScore) return "text-muted-foreground";
-    if ((isHome && homeScore > awayScore) || (!isHome && awayScore > homeScore)) {
-      return "text-green-600 dark:text-green-400 font-bold";
-    }
-    return "text-muted-foreground";
-  };
+  const team = (name: string, logo: string, isOurs: boolean) => (
+    <div className="flex flex-col items-center gap-2 text-center min-w-0">
+      <TeamLogo src={logo} name={name} className="h-12 w-12 sm:h-14 sm:w-14" />
+      <div className={cn("text-sm sm:text-base font-semibold leading-tight break-words", isOurs && "text-primary")}>{name}</div>
+    </div>
+  );
 
-  return (
-    <Card className="p-6" data-testid="fixture-card">
-      <div className="flex justify-between items-start mb-4">
-        <div className="flex items-center space-x-2 text-sm text-muted-foreground">
-          <Calendar className="h-4 w-4" />
-          <span>{date}</span>
-          {time && <span>• {time}</span>}
-        </div>
-        {getStatusBadge()}
-      </div>
-
-      <div className="grid grid-cols-3 items-center gap-4 mb-4">
-        <div className="text-right">
-          <div className="font-semibold">{homeTeam}</div>
-        </div>
-        <div className="text-center">
-          {status === "upcoming" ? (
-            <div className="text-2xl font-bold text-muted-foreground">VS</div>
-          ) : (
-            <div className="text-3xl font-bold font-mono">
-              <span className={getScoreColor(true, homeScore, awayScore)}>{homeScore}</span>
-              <span className="mx-2">:</span>
-              <span className={getScoreColor(false, homeScore, awayScore)}>{awayScore}</span>
-            </div>
+  const card = (
+    <Card
+      className={cn("h-full overflow-hidden", hasDetails && "card-hover cursor-pointer")}
+      data-testid="fixture-card"
+    >
+      <div className="flex items-center justify-between gap-2 px-4 sm:px-5 py-3 border-b bg-muted/50">
+        <div className="min-w-0">
+          <div className="text-xs font-semibold uppercase tracking-wider text-primary truncate">{match.competition}</div>
+          {match.round !== null && !match.isCup && (
+            <div className="text-xs text-muted-foreground">{match.round}. kolo</div>
           )}
         </div>
-        <div className="text-left">
-          <div className="font-semibold">{awayTeam}</div>
+        <span
+          className={cn(
+            "shrink-0 rounded-full px-2.5 py-1 text-[11px] font-bold uppercase tracking-wider",
+            STATUS[status].className,
+          )}
+        >
+          {STATUS[status].label}
+        </span>
+      </div>
+
+      <div className="px-4 sm:px-5 py-5">
+        <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2 sm:gap-4">
+          {team(match.homeTeam, match.homeLogoUrl, match.isHome)}
+          <div className="text-center px-1">
+            {hasScore ? (
+              <>
+                <div className="font-display text-4xl sm:text-5xl font-extrabold tabular-nums leading-none">
+                  <span className={scoreClass(true)}>{homeScore}</span>
+                  <span className="mx-1 text-muted-foreground">:</span>
+                  <span className={scoreClass(false)}>{awayScore}</span>
+                </div>
+                {match.homeHalfTime !== null && match.awayHalfTime !== null && (
+                  <div className="mt-1 text-xs text-muted-foreground">
+                    ({match.homeHalfTime}:{match.awayHalfTime})
+                  </div>
+                )}
+              </>
+            ) : (
+              <div className="font-display text-2xl font-bold text-accent-strong">VS</div>
+            )}
+          </div>
+          {team(match.awayTeam, match.awayLogoUrl, !match.isHome)}
+        </div>
+
+        <div className="mt-5 flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-xs sm:text-sm text-muted-foreground">
+          <span className="inline-flex items-center gap-1">
+            <Calendar className="h-4 w-4 text-accent" />
+            {formatMatchDate(match.startsAt)}
+            {time && ` · ${time}`}
+          </span>
+          {location && (
+            <span className="inline-flex items-center gap-1 text-center">
+              <MapPin className="h-4 w-4 text-accent shrink-0" />
+              {location}
+            </span>
+          )}
         </div>
       </div>
 
-      <div className="flex items-center justify-center text-sm text-muted-foreground">
-        <MapPin className="h-4 w-4 mr-1" />
-        <span>{location}</span>
-      </div>
+      {hasDetails && (
+        <div className="flex items-center justify-center gap-1 border-t py-2 text-xs font-semibold uppercase tracking-wider text-primary">
+          Detalji utakmice
+          <ChevronRight className="h-4 w-4" />
+        </div>
+      )}
     </Card>
+  );
+
+  return hasDetails ? (
+    <Link href={`/utakmica/${match.id}`} className="block h-full rounded-xl">
+      {card}
+    </Link>
+  ) : (
+    card
   );
 }

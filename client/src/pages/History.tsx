@@ -1,84 +1,170 @@
+import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { Calendar, Trophy, Users, Star, X } from "lucide-react";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
+import PageBanner from "@/components/PageBanner";
 import { Card } from "@/components/ui/card";
-import { Trophy, Users, Calendar } from "lucide-react";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
+import { CLUB_MOTTO } from "@/lib/club";
+import type { HistoryPage, HistoryPhoto } from "@shared/schema";
+import { usePageBanner } from "@/lib/pageBanners";
 
+const STAT_ICONS = [Calendar, Trophy, Users, Star];
+// Written out in full so Tailwind generates these classes.
+const STAT_COLUMNS: Record<number, string> = { 3: "lg:grid-cols-3", 4: "lg:grid-cols-4" };
+
+// Content is edited in Admin → History.
 export default function History() {
-  const milestones = [
-    { year: "2025", title: "Plasman u 2. HRL Jug - 3. mjesto", description: "Najbolji plasman u posljednjih 5 godina" },
-    { year: "2020", title: "Renovacija sportske dvorane", description: "Modernizacija infrastrukture za mlade igrače" },
-    { year: "2015", title: "Osnivanje mladih selekcija", description: "Pokretanje programa razvoja mladih talenta" },
-    { year: "2010", title: "Ulazak u 2. HRL", description: "Povijesni uspjeh i plasman u viši rang" },
-    { year: "1998", title: "Osnivanje kluba", description: "RK Biograd službeno osnovan" },
-  ];
+  const bannerImage = usePageBanner("history");
+  const { data, isLoading } = useQuery<HistoryPage>({ queryKey: ["/api/history"] });
+  const [openPhoto, setOpenPhoto] = useState<HistoryPhoto | null>(null);
 
   return (
     <div className="min-h-screen flex flex-col">
       <Header />
       <main className="flex-1">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="mb-12">
-            <h1 className="text-4xl md:text-5xl font-bold mb-4">Povijest RK Biograd</h1>
-            <p className="text-xl text-muted-foreground max-w-3xl">
-              Od osnivanja 1998. godine, RK Biograd je postao stub rukometne zajednice u Biogradu na Moru. 
-              Naša povijest je ispunjena strašću, posvećenošću i rastom.
-            </p>
-          </div>
+          <PageBanner title="Povijest RK Biograd" eyebrow="Naš klub · od 1963." subtitle={data?.content.intro} imageSrc={bannerImage} />
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
-            <Card className="p-6 text-center">
-              <Calendar className="h-12 w-12 text-primary mx-auto mb-4" />
-              <div className="text-3xl font-bold text-primary mb-2">27</div>
-              <div className="text-muted-foreground">Godina tradicije</div>
-            </Card>
-            <Card className="p-6 text-center">
-              <Trophy className="h-12 w-12 text-primary mx-auto mb-4" />
-              <div className="text-3xl font-bold text-primary mb-2">12</div>
-              <div className="text-muted-foreground">Osvojenih turnira</div>
-            </Card>
-            <Card className="p-6 text-center">
-              <Users className="h-12 w-12 text-primary mx-auto mb-4" />
-              <div className="text-3xl font-bold text-primary mb-2">200+</div>
-              <div className="text-muted-foreground">Članova kluba</div>
-            </Card>
-          </div>
-
-          <section>
-            <h2 className="text-3xl font-bold mb-8">Ključni događaji</h2>
-            <div className="space-y-8">
-              {milestones.map((milestone, idx) => (
-                <div key={idx} className="flex gap-6">
-                  <div className="flex flex-col items-center">
-                    <div className="h-12 w-12 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold">
-                      {milestone.year}
-                    </div>
-                    {idx !== milestones.length - 1 && (
-                      <div className="w-0.5 flex-1 bg-border mt-2"></div>
-                    )}
-                  </div>
-                  <Card className="flex-1 p-6 mb-4">
-                    <h3 className="text-xl font-semibold mb-2">{milestone.title}</h3>
-                    <p className="text-muted-foreground">{milestone.description}</p>
-                  </Card>
-                </div>
-              ))}
+          {isLoading || !data ? (
+            <div className="space-y-6">
+              <Skeleton className="h-36 w-full" />
+              <Skeleton className="h-64 w-full" />
             </div>
-          </section>
+          ) : (
+            <>
+              {data.content.stats.length > 0 && (
+                <div
+                  className={`grid grid-cols-1 sm:grid-cols-2 ${STAT_COLUMNS[data.content.stats.length] ?? ""} gap-4 md:gap-6 mb-14`}
+                  data-testid="history-stats"
+                >
+                  {data.content.stats.map((stat, i) => {
+                    const Icon = STAT_ICONS[i % STAT_ICONS.length];
+                    return (
+                      <Card key={i} className="card-hover p-6 text-center">
+                        <Icon className="h-14 w-14 p-3 rounded-full bg-secondary text-primary ring-2 ring-accent/40 mx-auto mb-4" />
+                        <div className="font-display text-5xl font-extrabold text-primary leading-none mb-2">{stat.value}</div>
+                        <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{stat.label}</div>
+                      </Card>
+                    );
+                  })}
+                </div>
+              )}
 
-          <section className="mt-12">
-            <Card className="p-8 bg-primary/5">
-              <h2 className="text-2xl font-bold mb-4">Naša misija</h2>
-              <p className="text-muted-foreground">
-                RK Biograd nije samo rukometni klub - mi smo zajednica koja njeguje vrijednosti sporta, 
-                timskog duha i predanosti. Naš cilj je razvijati mlade talente, dostizati vrhunske rezultate 
-                i predstavljati Biograd na Moru s ponosom i dignitetom. Svaki igrač, trener i navijač dio je 
-                naše velike obitelji.
-              </p>
-            </Card>
-          </section>
+              {data.events.length > 0 && (
+                <section>
+                  <h2 className="section-title mb-8">Ključni događaji</h2>
+                  <ol className="space-y-6 sm:space-y-8" data-testid="history-timeline">
+                    {data.events.map((event, index) => (
+                      <li key={event.id} className="relative pl-10 sm:pl-14">
+                        {/* Line from this dot's centre to the next dot's centre (same offset in the next item,
+                            one item height + the list gap further down), so it starts and ends at the dots. */}
+                        {index < data.events.length - 1 && (
+                          <span
+                            className="absolute left-3 sm:left-4 w-1 bg-accent/40 top-[2.125rem] sm:top-[2.375rem] h-[calc(100%+1.5rem)] sm:h-[calc(100%+2rem)]"
+                            aria-hidden="true"
+                          />
+                        )}
+                        <span
+                          className="absolute left-0 top-5 h-7 w-7 sm:h-9 sm:w-9 rounded-full bg-brand-gradient ring-4 ring-accent/30"
+                          aria-hidden="true"
+                        />
+                        <Card className="card-hover overflow-hidden border-l-4 border-l-accent">
+                          <div className={event.imageSrc ? "grid md:grid-cols-[1fr_280px]" : ""}>
+                            <div className="p-5 sm:p-6">
+                              <span className="inline-block rounded-full bg-primary px-3 py-1 font-display text-lg font-bold text-primary-foreground mb-3">
+                                {event.year}
+                              </span>
+                              <h3 className="font-display text-2xl font-bold uppercase text-primary mb-1">{event.title}</h3>
+                              {event.description && (
+                                <p className="text-muted-foreground whitespace-pre-line">{event.description}</p>
+                              )}
+                            </div>
+                            {event.imageSrc && (
+                              <img
+                                src={event.imageSrc}
+                                alt={event.title}
+                                loading="lazy"
+                                className="h-56 md:h-full w-full object-cover"
+                              />
+                            )}
+                          </div>
+                        </Card>
+                      </li>
+                    ))}
+                  </ol>
+                </section>
+              )}
+
+              {data.photos.length > 0 && (
+                <section className="mt-14">
+                  <h2 className="section-title mb-8">Galerija</h2>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4" data-testid="history-gallery">
+                    {data.photos.map((photo) => (
+                      <button
+                        key={photo.id}
+                        type="button"
+                        onClick={() => setOpenPhoto(photo)}
+                        className="group relative aspect-square overflow-hidden rounded-xl bg-muted shadow-sm"
+                        data-testid={`button-photo-${photo.id}`}
+                      >
+                        <img
+                          src={photo.imageSrc}
+                          alt={photo.caption || "Fotografija iz povijesti kluba"}
+                          loading="lazy"
+                          className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                        />
+                        {photo.caption && (
+                          <span className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-[hsl(232_85%_10%/0.85)] to-transparent p-2 pt-8 text-left text-xs sm:text-sm font-medium text-white line-clamp-2">
+                            {photo.caption}
+                          </span>
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                </section>
+              )}
+
+              {data.content.mission && (
+                <section className="mt-14">
+                  <Card className="p-6 sm:p-8 bg-secondary/60 border-accent/30">
+                    <h2 className="text-2xl font-bold uppercase text-primary mb-4">Naša misija</h2>
+                    <p className="text-muted-foreground whitespace-pre-line">{data.content.mission}</p>
+                    <p className="mt-6 text-xl font-bold tracking-wide text-primary" data-testid="text-history-motto">
+                      {CLUB_MOTTO}
+                    </p>
+                  </Card>
+                </section>
+              )}
+            </>
+          )}
         </div>
       </main>
       <Footer />
+
+      <Dialog open={!!openPhoto} onOpenChange={(open) => !open && setOpenPhoto(null)}>
+        <DialogContent className="max-w-4xl p-0 overflow-hidden bg-[hsl(232_85%_10%)] border-0 [&>button]:hidden">
+          <DialogTitle className="sr-only">{openPhoto?.caption || "Fotografija"}</DialogTitle>
+          {openPhoto && (
+            <figure>
+              <img src={openPhoto.imageSrc} alt={openPhoto.caption} className="max-h-[80vh] w-full object-contain" />
+              {openPhoto.caption && (
+                <figcaption className="p-4 text-center text-sm text-white/90">{openPhoto.caption}</figcaption>
+              )}
+            </figure>
+          )}
+          <button
+            type="button"
+            onClick={() => setOpenPhoto(null)}
+            className="absolute right-3 top-3 inline-flex h-10 w-10 items-center justify-center rounded-full bg-black/50 text-white hover:bg-black/70"
+            aria-label="Zatvori"
+          >
+            <X className="h-5 w-5" />
+          </button>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
