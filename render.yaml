@@ -1,27 +1,32 @@
-# Render Blueprint for the RK Biograd website: one Node web service + one Postgres database.
-# Render dashboard → New → Blueprint → pick this repository. See replit.md → "Deploying on Render".
+# Render Blueprint for the RK Biograd website: one Docker web service (Laravel) + one Postgres database.
+# Render dashboard → New → Blueprint → pick this repository. See README.md → "Deploying on Render".
 services:
   - type: web
     name: rk-biograd
-    runtime: node
+    runtime: docker
     # Always-on instance. "free" also works, but sleeps after 15 min without visitors
     # (first visit then takes ~1 minute) and does not run the preDeployCommand.
     plan: 0.5c-512mb
     region: frankfurt
-    buildCommand: npm ci && npm run build
+    dockerfilePath: ./Dockerfile
     # Creates/updates the database tables before each deploy goes live.
-    preDeployCommand: npm run db:push
-    startCommand: npm start
+    preDeployCommand: php artisan migrate --force
     healthCheckPath: /healthz
     envVars:
-      - key: NODE_VERSION
-        value: "22"
-      - key: DATABASE_URL
+      - key: APP_ENV
+        value: production
+      - key: APP_DEBUG
+        value: "false"
+      - key: APP_KEY
+        generateValue: true
+      - key: LOG_CHANNEL
+        value: stderr
+      - key: DB_CONNECTION
+        value: pgsql
+      - key: DB_URL
         fromDatabase:
           name: rk-biograd-db
           property: connectionString
-      - key: SESSION_SECRET
-        generateValue: true
       # Asked for when the Blueprint is first created:
       - key: ADMIN_EMAILS # Google accounts allowed into the admin panel, comma-separated
         sync: false
@@ -32,6 +37,19 @@ services:
       # Optional: set to your own domain (e.g. https://rkbiograd.hr) once it is connected.
       # Defaults to the onrender.com address (RENDER_EXTERNAL_URL).
       - key: PUBLIC_URL
+        sync: false
+      # E-mail sending (contact form). See .env.example.
+      - key: MAIL_MAILER
+        value: smtp
+      - key: MAIL_HOST
+        sync: false
+      - key: MAIL_PORT
+        value: "587"
+      - key: MAIL_USERNAME
+        sync: false
+      - key: MAIL_PASSWORD
+        sync: false
+      - key: MAIL_FROM_ADDRESS
         sync: false
 
 databases:
